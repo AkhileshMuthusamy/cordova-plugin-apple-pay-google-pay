@@ -135,10 +135,14 @@ public class ApplePayGooglePay extends CordovaPlugin {
             String merchantId = getParam(argss, "merchantId");
             String gpMerchantId = getParam(argss, "gpMerchantId");
             String gpMerchantName = getParam(argss, "gpMerchantName");
+            String braintreeApiVersion = getParam(argss, "btApiVersion");
+            String braintreeSdkVersion = getParam(argss, "btSdkVersion");
+            String braintreeMerchantId = getParam(argss, "btMerchantId");
+            String braintreeClientKey = getParam(argss, "btClientKey");
 
             JSONObject paymentDataRequest = getBaseRequest();
             paymentDataRequest.put(
-                    "allowedPaymentMethods", new JSONArray().put(getCardPaymentMethod(gateway, merchantId)));
+                    "allowedPaymentMethods", new JSONArray().put(getCardPaymentMethod(gateway, merchantId, braintreeApiVersion, braintreeSdkVersion, braintreeMerchantId, braintreeClientKey)));
             paymentDataRequest.put("transactionInfo", getTransactionInfo(price, currencyCode, countryCode));
             paymentDataRequest.put("merchantInfo",
                     new JSONObject()
@@ -177,14 +181,27 @@ public class ApplePayGooglePay extends CordovaPlugin {
      * @see <a href=
      * "https://developers.google.com/pay/api/android/reference/object#PaymentMethodTokenizationSpecification">PaymentMethodTokenizationSpecification</a>
      */
-    private static JSONObject getGatewayTokenizationSpecification(String gateway, String gatewayMerchantId) throws JSONException {
-        return new JSONObject() {{
-            put("type", "PAYMENT_GATEWAY");
-            put("parameters", new JSONObject() {{
-                put("gateway", gateway);
-                put("gatewayMerchantId", gatewayMerchantId);
-            }});
-        }};
+    private static JSONObject getGatewayTokenizationSpecification(String gateway, String gatewayMerchantId, String braintreeApiVersion, String braintreeSdkVersion, String braintreeMerchantId, String braintreeClientKey) throws JSONException {
+        if (gateway == "braintree") {
+            return new JSONObject() {{
+                put("type", "PAYMENT_GATEWAY");
+                put("parameters", new JSONObject() {{
+                    put("gateway", gateway);
+                    put("braintree:apiVersion", braintreeApiVersion);
+                    put("braintree:sdkVersion", braintreeSdkVersion);
+                    put("braintree:merchantId", braintreeMerchantId);
+                    put("braintree:clientKey", braintreeClientKey);
+                }});
+            }};
+        } else {
+            return new JSONObject() {{
+                put("type", "PAYMENT_GATEWAY");
+                put("parameters", new JSONObject() {{
+                    put("gateway", gateway);
+                    put("gatewayMerchantId", gatewayMerchantId);
+                }});
+            }};   
+        }
     }
 
 
@@ -219,9 +236,9 @@ public class ApplePayGooglePay extends CordovaPlugin {
      * @see <a
      * href="https://developers.google.com/pay/api/android/reference/object#PaymentMethod">PaymentMethod</a>
      */
-    private JSONObject getCardPaymentMethod(String gateway, String gatewayMerchantId) throws JSONException {
+    private JSONObject getCardPaymentMethod(String gateway, String gatewayMerchantId, String braintreeApiVersion, String braintreeSdkVersion, String braintreeMerchantId, String braintreeClientKey) throws JSONException {
         JSONObject cardPaymentMethod = getBaseCardPaymentMethod();
-        cardPaymentMethod.put("tokenizationSpecification", getGatewayTokenizationSpecification(gateway, gatewayMerchantId));
+        cardPaymentMethod.put("tokenizationSpecification", getGatewayTokenizationSpecification(gateway, gatewayMerchantId, braintreeApiVersion, braintreeSdkVersion, braintreeMerchantId, braintreeClientKey));
 
         return cardPaymentMethod;
     }
